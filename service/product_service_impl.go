@@ -70,9 +70,107 @@ func (service *ProductServiceImpl) FindImage(auth *auth.AccessDetails, imagesNam
 
 	return fileBytes
 }
+func (service *ProductServiceImpl) Create(auth *auth.AccessDetails, request *web.ProductCreateRequest, c *gin.Context) web.ProductResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
+	tx := service.DB.Begin()
+	defer helper.CommitOrRollback(tx)
+
+	err = os.MkdirAll(helper.PathToProduct, os.ModePerm)
+	helper.PanicIfError(err)
+
+	// create new file image
+	var imageName string
+	if len(request.ImageFile) > 0 {
+		imageName = request.ImageFile[0].Filename
+
+		filePath := helper.PathToProduct + imageName
+		err = c.SaveUploadedFile(request.ImageFile[0], filePath)
+		if err != nil {
+			helper.PanicIfError(err)
+		}
+	}
+
+	newProduct := &domain.Product{
+		Name:        request.Name,
+		Type:        request.Type,
+		CompanyCode: request.CompanyCode,
+		Description: request.Description,
+		Images:      imageName,
+		Available:   request.Available,
+		CreatedByID: auth.ID,
+	}
+
+	newProduct, err = service.ProductRepository.Create(tx, newProduct)
+
+	// If failed insert to database, delete image file
+	if err != nil {
+		_ = os.Remove(helper.PathToProduct + imageName)
+		helper.PanicIfError(err)
+	}
+
+	return newProduct.ToProductResponse()
+}
+
+func (service *ProductServiceImpl) Update(auth *auth.AccessDetails, id uint, request *web.ProductUpdateRequest, c *gin.Context) web.ProductResponse {
+	err := service.Validate.Struct(request)
+	helper.PanicIfError(err)
+
+	tx := service.DB.Begin()
+	err = tx.Error
+	helper.PanicIfError(err)
+
+	defer helper.CommitOrRollback(tx)
+
+	// Create folder if not exist
+	err = os.MkdirAll(helper.PathToProduct, os.ModePerm)
+	helper.PanicIfError(err)
+
+	product := &domain.Product{
+		Model:       gorm.Model{ID: uint(id)},
+		UpdatedByID: auth.ID,
+		Name:        request.Name,
+		Type:        request.Type,
+		Description: request.Description,
+		Available:   request.Available,
+	}
+
+	// Validate images
+	newImage := request.ImageFile[0].Filename
+	oldImages := request.ImageName
+	if len(request.ImageFile) > 0 {
+		product.Images = newImage
+
+		// Save new image
+		err = c.SaveUploadedFile(request.ImageFile[0], helper.PathToProduct+newImage)
+		helper.PanicIfError(err)
+
+		// Delete image old if exists
+		if oldImages != newImage {
+			oldImagePath := helper.PathToProduct + oldImages
+			err = os.Remove(oldImagePath)
+			if err != nil && !os.IsNotExist(err) {
+				helper.PanicIfError(err)
+			}
+		}
+	} else {
+		product.Images = oldImages
+	}
+
+	// Update product
+	product = service.ProductRepository.Update(tx, product)
+
+	return product.ToProductResponse()
+}
+
+func (service *ProductServiceImpl) Delete(auth *auth.AccessDetails, id uint, c *gin.Context) {
+	tx := service.DB.Begin()
+	defer helper.CommitOrRollback(tx)
+	service.ProductRepository.Delete(tx, id, auth.ID)
+}
 
 // Group tRansaction Product
-
 func (service *ProductServiceImpl) FindAllTransaction(auth *auth.AccessDetails, filters *map[string]string, c *gin.Context) []web.TransactionResponse {
 	tx := service.DB.Begin()
 	defer helper.CommitOrRollback(tx)
@@ -88,8 +186,8 @@ func (service *ProductServiceImpl) CreateTransaction(auth *auth.AccessDetails, r
 	//  Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
-	channel := make(chan domain.Product)
-	defer close(channel)
+	// channel := make(chan domain.Product)
+	// defer close(channel)
 
 	// Validate user role
 	if auth.Role != "customer" {
@@ -98,17 +196,17 @@ func (service *ProductServiceImpl) CreateTransaction(auth *auth.AccessDetails, r
 	}
 
 	// Find product
-	// product := service.ProductRepository.FindByID(tx, &request.ProductID)
+	product := service.ProductRepository.FindByID(tx, &request.ProductID)
 
 	// implement chanel to find product
-	go func() {
-		product := service.ProductRepository.FindByID(tx, &request.ProductID)
-		channel <- product
-		fmt.Println("done query product")
+	// go func() {
+	// 	product := service.ProductRepository.FindByID(tx, &request.ProductID)
+	// 	channel <- product
+	// 	fmt.Println("done query product")
 
-	}()
+	// }()
 
-	product := <-channel
+	// product := <-channel
 
 	// Find limit
 	limit := service.BalanceRepository.FindByID(tx, &auth.ID)

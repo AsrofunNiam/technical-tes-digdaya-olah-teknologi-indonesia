@@ -8,9 +8,9 @@ import (
 type Products []Product
 type Product struct {
 	gorm.Model
-	CreatedByID uint `gorm:""`
-	UpdatedByID uint `gorm:""`
-	DeletedByID uint `gorm:""`
+	CreatedByID uint `gorm:"default:null"`
+	UpdatedByID uint `gorm:"default:null"`
+	DeletedByID uint `gorm:"default:null"`
 
 	// Required Fields
 	Name        string `gorm:"type:varchar(255);not null"`

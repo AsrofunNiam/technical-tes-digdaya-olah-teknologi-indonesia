@@ -54,6 +54,65 @@ func (controller *ProductControllerImpl) FindImage(c *gin.Context, auth *auth.Ac
 	c.Writer.Write(fileResponse)
 }
 
+func (controller *ProductControllerImpl) Create(c *gin.Context, auth *auth.AccessDetails) {
+	form, _ := c.MultipartForm()
+
+	companyCodeStr := c.PostForm("company_code")
+
+	companyCodeUint := helper.StringToUint(companyCodeStr)
+	request := web.ProductCreateRequest{
+		Name:        c.PostForm("name"),
+		Type:        c.PostForm("type"),
+		CompanyCode: companyCodeUint,
+		Description: c.PostForm("description"),
+		Available:   c.PostForm("available") == "true",
+		ImageFile:   form.File["image_file"],
+	}
+
+	productResponse := controller.ProductService.Create(auth, &request, c)
+	webResponse := web.WebResponse{
+		Success: true,
+		Message: "Product updated successfully",
+		Data:    productResponse,
+	}
+	c.JSON(http.StatusOK, webResponse)
+}
+
+func (controller *ProductControllerImpl) Update(c *gin.Context, auth *auth.AccessDetails) {
+	productID := c.Param("id")
+	form, _ := c.MultipartForm()
+
+	productIDUint := helper.StringToUint(productID)
+	request := web.ProductUpdateRequest{
+		Name:        c.PostForm("name"),
+		Type:        c.PostForm("type"),
+		Description: c.PostForm("description"),
+		Available:   c.PostForm("available") == "true",
+		ImageName:   c.PostForm("image_name"),
+		ImageFile:   form.File["image_file"],
+	}
+
+	productResponse := controller.ProductService.Update(auth, productIDUint, &request, c)
+	webResponse := web.WebResponse{
+		Success: true,
+		Message: "Product updated successfully",
+		Data:    productResponse,
+	}
+	c.JSON(http.StatusOK, webResponse)
+}
+func (controller *ProductControllerImpl) Delete(c *gin.Context, auth *auth.AccessDetails) {
+	productID := c.Param("id")
+	productIDUint := helper.StringToUint(productID)
+
+	controller.ProductService.Delete(auth, productIDUint, c)
+	webResponse := web.WebResponse{
+		Success: true,
+		Message: "Product deleted successfully",
+	}
+
+	c.JSON(http.StatusOK, webResponse)
+}
+
 // Group transaction
 
 func (controller *ProductControllerImpl) FindAllProductTransaction(c *gin.Context, auth *auth.AccessDetails) {

@@ -38,3 +38,30 @@ func (repository *ProductRepositoryImpl) FindByID(db *gorm.DB, id *uint) domain.
 	helper.PanicIfError(err)
 	return product
 }
+
+func (repository *ProductRepositoryImpl) Create(db *gorm.DB, product *domain.Product) (*domain.Product, error) {
+	err := db.Create(&product).Error
+	if err != nil {
+		return nil, err
+	}
+	return product, nil
+}
+
+func (repository *ProductRepositoryImpl) Update(db *gorm.DB, product *domain.Product) *domain.Product {
+	err := db.Updates(&product).First(&product).Error
+	helper.PanicIfError(err)
+
+	return product
+}
+
+func (repository *ProductRepositoryImpl) Delete(db *gorm.DB, id, deletedByID uint) {
+	err := db.First(&domain.Product{}, id).Error
+	helper.PanicIfError(err)
+
+	// soft delete
+	err = db.Updates(&domain.Product{
+		Model: gorm.Model{ID: uint(id)},
+	}).Delete(&domain.Company{}, id).Error
+
+	helper.PanicIfError(err)
+}
