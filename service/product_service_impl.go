@@ -48,19 +48,37 @@ func NewProductService(
 }
 
 func (service *ProductServiceImpl) FindAll(auth *auth.AccessDetails, filters *map[string]string, c *gin.Context) []web.ProductResponse {
-	tx := service.DB
-	err := tx.Error
-	helper.PanicIfError(err)
+	ctx := context.Background()
+	key := "products:all"
 
-	products := service.ProductRepository.FindAll(tx, filters)
-	return products.ToProductResponses()
+	// Cek cache di Redis
+	data, err := service.RedisClient.Get(ctx, key).Result()
+	if err == nil {
+		// If cache products found
+		var cachedProducts []web.ProductResponse
+		if err := json.Unmarshal([]byte(data), &cachedProducts); err == nil {
+			return cachedProducts
+		}
+	}
+
+	// If cache not found
+	products := service.ProductRepository.FindAll(service.DB, filters)
+	productResponses := products.ToProductResponses() // Convert ke response DTO
+
+	// Save products to Redis
+	jsonData, err := json.Marshal(productResponses)
+	if err == nil {
+		_ = service.RedisClient.Set(ctx, key, jsonData, 100*time.Minute).Err()
+	}
+
+	return productResponses
 }
 
 func (service *ProductServiceImpl) FindByID(auth *auth.AccessDetails, id *uint, c *gin.Context) web.ProductResponse {
 	ctx := context.Background()
+	key := fmt.Sprintf("product: %s", fmt.Sprintf("%d", *id))
 
 	// Cek cache di Redis
-	key := fmt.Sprintf("product: %s", fmt.Sprintf("%d", *id))
 	data, err := service.RedisClient.Get(ctx, key).Result()
 	if err == redis.Nil {
 		// If cache product not found so get from database
@@ -69,7 +87,7 @@ func (service *ProductServiceImpl) FindByID(auth *auth.AccessDetails, id *uint, 
 
 		// Save to Redis
 		jsonData, _ := json.Marshal(productResponse)
-		_ = service.RedisClient.Set(ctx, key, jsonData, 10*time.Minute).Err()
+		_ = service.RedisClient.Set(ctx, key, jsonData, 100*time.Minute).Err()
 
 		return productResponse
 	} else if err != nil {
