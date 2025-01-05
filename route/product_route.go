@@ -13,10 +13,17 @@ import (
 func ProductRoute(router *gin.Engine, db *gorm.DB, validate *validator.Validate) {
 	Products := service.NewProductService(
 		repository.NewProductRepository(),
+		repository.NewTransactionRepository(),
+		repository.NewBalanceRepository(),
 		db,
 		validate,
 	)
 	productController := controller.NewProductController(Products)
 	router.GET("/products", auth.Auth(productController.FindAll, []string{}))
 	router.GET("/products/:id", auth.Auth(productController.FindByID, []string{}))
+	router.GET("/products/photo/:image_name", auth.Auth(productController.FindImage, []string{}))
+
+	// Group transaction
+	router.GET("/products/transactions", auth.Auth(productController.FindAllProductTransaction, []string{}))
+	router.POST("/products/transactions", auth.Auth(productController.CreateProductTransaction, []string{}))
 }

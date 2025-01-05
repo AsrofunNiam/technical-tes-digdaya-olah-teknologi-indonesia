@@ -17,6 +17,7 @@ type Product struct {
 	Type        string `gorm:"type:text"`
 	CompanyCode uint   `gorm:"not null"`
 	Description string `gorm:"type:text"`
+	Images      string `gorm:"type:text"`
 	Available   bool   `gorm:"default:true"`
 
 	// Relations
@@ -32,6 +33,7 @@ func (product *Product) ToProductResponse() web.ProductResponse {
 		Type:        product.Type,
 		CompanyCode: product.CompanyCode,
 		Description: product.Description,
+		Images:      product.Images,
 		Available:   product.Available,
 
 		// Relations
