@@ -51,7 +51,7 @@ This project to technical test on PT. Digdaya Olah Teknologi (DOT) Indonesia
 1. https://app.swaggerhub.com/apis/technical-tes-digdaya-olah-teknologi-indonesia/1.0.0
 
 ## Documentation ERD
-1. https://drive.google.com/file/d/130d1pTjxBHPGQi-A9pDwqZDF4u99_DMw/view?usp=sharing
+1. https://drive.google.com/file/d/1H2Vwpg__PzfhTgXo_ayiQLWSoKfoSEHI/view?usp=sharing
 
 ## Go version 
 1. $go version > go1.21.0
