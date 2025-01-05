@@ -7,15 +7,17 @@ import (
 	"github.com/AsrofunNiam/technical-tes-digdaya-olah-teknologi-indonesia/service"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
-func ProductRoute(router *gin.Engine, db *gorm.DB, validate *validator.Validate) {
+func ProductRoute(router *gin.Engine, db *gorm.DB, redisClient *redis.Client, validate *validator.Validate) {
 	Products := service.NewProductService(
 		repository.NewProductRepository(),
 		repository.NewTransactionRepository(),
 		repository.NewBalanceRepository(),
 		db,
+		redisClient,
 		validate,
 	)
 	productController := controller.NewProductController(Products)

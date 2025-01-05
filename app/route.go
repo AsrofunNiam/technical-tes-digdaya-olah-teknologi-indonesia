@@ -8,6 +8,7 @@ import (
 	"github.com/AsrofunNiam/technical-tes-digdaya-olah-teknologi-indonesia/route"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -24,7 +25,7 @@ func ErrorHandler() gin.HandlerFunc {
 	}
 }
 
-func NewRouter(db *gorm.DB, validate *validator.Validate) *gin.Engine {
+func NewRouter(db *gorm.DB, redisClient *redis.Client, validate *validator.Validate) *gin.Engine {
 
 	router := gin.New()
 
@@ -34,7 +35,7 @@ func NewRouter(db *gorm.DB, validate *validator.Validate) *gin.Engine {
 
 	// route path
 	route.UserRoute(router, db, validate)
-	route.ProductRoute(router, db, validate)
+	route.ProductRoute(router, db, redisClient, validate)
 	// route.TransactionRoute(router, db, validate)
 
 	return router

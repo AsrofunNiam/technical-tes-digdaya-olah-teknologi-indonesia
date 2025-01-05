@@ -13,6 +13,11 @@ type Configuration struct {
 	User          string `mapstructure:"USER_DB"`
 	Db            string `mapstructure:"DATABASE_DB"`
 	EncryptionKey string `mapstructure:"ENCRYPTION_KEY"`
+
+	// connection to redis
+	RedisHost     string `mapstructure:"REDIS_HOST"`
+	RedisPort     string `mapstructure:"REDIS_PORT"`
+	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
 }
 
 func LoadConfig() (config Configuration, err error) {

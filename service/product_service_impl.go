@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"github.com/AsrofunNiam/technical-tes-digdaya-olah-teknologi-indonesia/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +25,7 @@ type ProductServiceImpl struct {
 	TransactionRepository repository.TransactionRepository
 	BalanceRepository     repository.BalanceRepository
 	DB                    *gorm.DB
+	RedisClient           *redis.Client
 	Validate              *validator.Validate
 }
 
@@ -30,6 +34,7 @@ func NewProductService(
 	transactionRepository repository.TransactionRepository,
 	limitRepository repository.BalanceRepository,
 	db *gorm.DB,
+	redisClient *redis.Client,
 	validate *validator.Validate,
 ) ProductService {
 	return &ProductServiceImpl{
@@ -37,6 +42,7 @@ func NewProductService(
 		TransactionRepository: transactionRepository,
 		BalanceRepository:     limitRepository,
 		DB:                    db,
+		RedisClient:           redisClient,
 		Validate:              validate,
 	}
 }
@@ -51,12 +57,29 @@ func (service *ProductServiceImpl) FindAll(auth *auth.AccessDetails, filters *ma
 }
 
 func (service *ProductServiceImpl) FindByID(auth *auth.AccessDetails, id *uint, c *gin.Context) web.ProductResponse {
-	tx := service.DB
-	err := tx.Error
-	helper.PanicIfError(err)
+	ctx := context.Background()
 
-	product := service.ProductRepository.FindByID(tx, id)
-	return product.ToProductResponse()
+	// Cek cache di Redis
+	key := fmt.Sprintf("product: %s", fmt.Sprintf("%d", *id))
+	data, err := service.RedisClient.Get(ctx, key).Result()
+	if err == redis.Nil {
+		// If cache product not found so get from database
+		product := service.ProductRepository.FindByID(service.DB, id)
+		productResponse := product.ToProductResponse()
+
+		// Save to Redis
+		jsonData, _ := json.Marshal(productResponse)
+		_ = service.RedisClient.Set(ctx, key, jsonData, 10*time.Minute).Err()
+
+		return productResponse
+	} else if err != nil {
+		helper.PanicIfError(err)
+	}
+
+	var cachedProduct web.ProductResponse
+	_ = json.Unmarshal([]byte(data), &cachedProduct)
+	return cachedProduct
+
 }
 
 func (service *ProductServiceImpl) FindImage(auth *auth.AccessDetails, imagesName string, c *gin.Context) []byte {
