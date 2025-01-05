@@ -1,0 +1,14 @@
+insert into DOT.products (id, created_at, updated_at, deleted_at, created_by_id, updated_by_id, deleted_by_id, name, type, company_code, description, available, images)
+values  (1, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Honda Beat', 'Motor', 1, 'Skuter matik hemat bahan bakar.', 1, 'BEAT.jpeg'),
+        (2, '2024-12-04 22:51:59.000', '2025-01-05 17:19:39.222', null, 11, 2, 2, 'Yamaha NMAX 2 Test', 'Motor', 1, 'Skuter matik premium dengan desain modern 2 Test', 1, 'NMAX-NEW-1.jpg'),
+        (3, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Suzuki GSX-R150', 'Motor', 2, 'Motor sport dengan mesin bertenaga 150cc.', 1, 'GSX150.webp'),
+        (4, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Kawasaki Ninja 250', 'Motor', 3, 'Motor sport dengan mesin 250cc yang bertenaga.', 1, 'NINJA.jpg'),
+        (5, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Toyota Avanza', 'Mobil', 4, 'Mobil keluarga MPV yang nyaman dan hemat bahan bakar.', 1, 'AVANZA-NEW.webp'),
+        (6, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Honda Civic', 'Mobil', 4, 'Sedan premium dengan desain sporty dan mesin bertenaga.', 1, 'product6.jpg'),
+        (7, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Mitsubishi Xpander', 'Mobil', 5, 'MPV modern dengan desain stylish dan fitur canggih.', 1, 'product7.jpg'),
+        (8, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Nissan Kicks', 'Mobil', 5, 'SUV kompak dengan fitur hybrid dan desain futuristik.', 1, 'product8.jpg'),
+        (9, '2024-12-04 22:51:59.000', '2024-12-04 22:51:59.000', null, 11, null, null, 'Suzuki Ertiga', 'Mobil', 2, 'MPV dengan kabin luas dan fitur kenyamanan keluarga.', 1, 'product9.jpg'),
+        (10, '2024-12-04 22:51:59.000', '2025-01-05 15:18:17.464', '2025-01-05 15:18:17.470', 11, null, 2, 'BMW X5', 'Mobil', 6, 'SUV mewah dengan performa tinggi dan fitur premium.', 1, 'product10.jpg'),
+        (16, '2025-01-05 15:38:34.617', '2025-01-05 15:38:34.617', null, 2, null, null, 'Yamaha NMAX 11', 'Motor', 1, 'Skuter matik premium dengan desain modern 11', 1, 'NMAX-NEW.jpg'),
+        (17, '2025-01-05 16:56:33.579', '2025-01-05 16:56:33.579', null, 2, null, null, 'Yamaha NMAX 17', 'Motor', 1, 'Skuter matik premium dengan desain modern 17', 1, 'NMAX-NEW.jpg'),
+        (19, '2025-01-05 17:04:23.219', '2025-01-05 17:20:38.107', '2025-01-05 17:20:38.141', 2, null, 2, 'Yamaha NMAX 18', 'Motor', 10, 'Skuter matik premium dengan desain modern 18', 1, 'NMAX-NEW-1.jpg');

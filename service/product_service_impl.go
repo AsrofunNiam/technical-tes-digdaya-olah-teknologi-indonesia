@@ -227,8 +227,6 @@ func (service *ProductServiceImpl) CreateTransaction(auth *auth.AccessDetails, r
 	//  Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
-	// channel := make(chan domain.Product)
-	// defer close(channel)
 
 	// Validate user role
 	if auth.Role != "customer" {
@@ -238,16 +236,6 @@ func (service *ProductServiceImpl) CreateTransaction(auth *auth.AccessDetails, r
 
 	// Find product
 	product := service.ProductRepository.FindByID(tx, &request.ProductID)
-
-	// implement chanel to find product
-	// go func() {
-	// 	product := service.ProductRepository.FindByID(tx, &request.ProductID)
-	// 	channel <- product
-	// 	fmt.Println("done query product")
-
-	// }()
-
-	// product := <-channel
 
 	// Find limit
 	limit := service.BalanceRepository.FindByID(tx, &auth.ID)
