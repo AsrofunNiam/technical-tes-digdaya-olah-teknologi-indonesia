@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"github.com/AsrofunNiam/technical-tes-digdaya-olah-teknologi-indonesia/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +25,7 @@ type ProductServiceImpl struct {
 	TransactionRepository repository.TransactionRepository
 	BalanceRepository     repository.BalanceRepository
 	DB                    *gorm.DB
+	RedisClient           *redis.Client
 	Validate              *validator.Validate
 }
 
@@ -30,6 +34,7 @@ func NewProductService(
 	transactionRepository repository.TransactionRepository,
 	limitRepository repository.BalanceRepository,
 	db *gorm.DB,
+	redisClient *redis.Client,
 	validate *validator.Validate,
 ) ProductService {
 	return &ProductServiceImpl{
@@ -37,26 +42,62 @@ func NewProductService(
 		TransactionRepository: transactionRepository,
 		BalanceRepository:     limitRepository,
 		DB:                    db,
+		RedisClient:           redisClient,
 		Validate:              validate,
 	}
 }
 
 func (service *ProductServiceImpl) FindAll(auth *auth.AccessDetails, filters *map[string]string, c *gin.Context) []web.ProductResponse {
-	tx := service.DB
-	err := tx.Error
-	helper.PanicIfError(err)
+	ctx := context.Background()
+	key := "products:all"
 
-	products := service.ProductRepository.FindAll(tx, filters)
-	return products.ToProductResponses()
+	// Cek cache di Redis
+	data, err := service.RedisClient.Get(ctx, key).Result()
+	if err == nil {
+		// If cache products found
+		var cachedProducts []web.ProductResponse
+		if err := json.Unmarshal([]byte(data), &cachedProducts); err == nil {
+			return cachedProducts
+		}
+	}
+
+	// If cache not found
+	products := service.ProductRepository.FindAll(service.DB, filters)
+	productResponses := products.ToProductResponses() // Convert ke response DTO
+
+	// Save products to Redis
+	jsonData, err := json.Marshal(productResponses)
+	if err == nil {
+		_ = service.RedisClient.Set(ctx, key, jsonData, 100*time.Minute).Err()
+	}
+
+	return productResponses
 }
 
 func (service *ProductServiceImpl) FindByID(auth *auth.AccessDetails, id *uint, c *gin.Context) web.ProductResponse {
-	tx := service.DB
-	err := tx.Error
-	helper.PanicIfError(err)
+	ctx := context.Background()
+	key := fmt.Sprintf("product: %s", fmt.Sprintf("%d", *id))
 
-	product := service.ProductRepository.FindByID(tx, id)
-	return product.ToProductResponse()
+	// Cek cache di Redis
+	data, err := service.RedisClient.Get(ctx, key).Result()
+	if err == redis.Nil {
+		// If cache product not found so get from database
+		product := service.ProductRepository.FindByID(service.DB, id)
+		productResponse := product.ToProductResponse()
+
+		// Save to Redis
+		jsonData, _ := json.Marshal(productResponse)
+		_ = service.RedisClient.Set(ctx, key, jsonData, 100*time.Minute).Err()
+
+		return productResponse
+	} else if err != nil {
+		helper.PanicIfError(err)
+	}
+
+	var cachedProduct web.ProductResponse
+	_ = json.Unmarshal([]byte(data), &cachedProduct)
+	return cachedProduct
+
 }
 
 func (service *ProductServiceImpl) FindImage(auth *auth.AccessDetails, imagesName string, c *gin.Context) []byte {
@@ -186,8 +227,6 @@ func (service *ProductServiceImpl) CreateTransaction(auth *auth.AccessDetails, r
 	//  Validate request
 	err := service.Validate.Struct(request)
 	helper.PanicIfError(err)
-	// channel := make(chan domain.Product)
-	// defer close(channel)
 
 	// Validate user role
 	if auth.Role != "customer" {
@@ -197,16 +236,6 @@ func (service *ProductServiceImpl) CreateTransaction(auth *auth.AccessDetails, r
 
 	// Find product
 	product := service.ProductRepository.FindByID(tx, &request.ProductID)
-
-	// implement chanel to find product
-	// go func() {
-	// 	product := service.ProductRepository.FindByID(tx, &request.ProductID)
-	// 	channel <- product
-	// 	fmt.Println("done query product")
-
-	// }()
-
-	// product := <-channel
 
 	// Find limit
 	limit := service.BalanceRepository.FindByID(tx, &auth.ID)

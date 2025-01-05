@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/AsrofunNiam/technical-tes-digdaya-olah-teknologi-indonesia/model/domain"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -32,13 +33,11 @@ func ConnectDatabase(user, host, password, port, db string) *gorm.DB {
 	err = database.AutoMigrate(
 		&domain.User{},
 		&domain.Balance{},
-
-		&domain.Transaction{},
-
-		&domain.Product{},
 		&domain.Currency{},
-		&domain.ProductPrice{},
 		&domain.Company{},
+		&domain.Product{},
+		&domain.ProductPrice{},
+		&domain.Transaction{},
 	)
 	if err != nil {
 		panic("failed to auto migrate schema")
@@ -46,4 +45,17 @@ func ConnectDatabase(user, host, password, port, db string) *gorm.DB {
 	}
 
 	return database
+}
+
+func ConnectClientCRedis(host, port, password string) *redis.Client {
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     host + ":" + port,
+		Password: password,
+		DB:       1,
+		Protocol: 3,
+	})
+
+	return rdb
+
 }

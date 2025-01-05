@@ -60,7 +60,8 @@ func (repository *ProductRepositoryImpl) Delete(db *gorm.DB, id, deletedByID uin
 
 	// soft delete
 	err = db.Updates(&domain.Product{
-		Model: gorm.Model{ID: uint(id)},
+		Model:       gorm.Model{ID: uint(id)},
+		DeletedByID: deletedByID,
 	}).Delete(&domain.Company{}, id).Error
 
 	helper.PanicIfError(err)
